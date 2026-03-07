@@ -109,71 +109,67 @@ Every request that passes through MediatR traverses a pipeline of four behaviors
 ---
 
 ## 📁 Project Structure
-
-```
-/
 │
-├── dotnet-clean-architecture-cqrs.csproj    # Root web project — references all layer projects
-├── Program.cs                                # Application entry point — configures DI, middleware, Swagger
-├── appsettings.json                          # Configuration — connection strings, logging levels
+├── dotnet-clean-architecture-cqrs.csproj    # Root web project — references all layer projects
+├── Program.cs                                # Application entry point — configures DI, middleware, Swagger
+├── appsettings.json                          # Configuration — connection strings, logging levels
 │
-├── Domain/                     # ── INNERMOST LAYER: pure business logic, zero dependencies ──
-│       ├── Aggregates/
-│      │   └── Project.cs                    # Aggregate root — owns tasks, enforces 20-task limit
-│      ├── Entities/
-│      │   └── TaskItem.cs                   # Entity — belongs to Project, has status & priority
-│      ├── Enums/
-│      │   ├── TaskItemStatus.cs             # Pending → InProgress → Completed
-│      │   └── TaskPriority.cs               # Low, Medium, High
-│      ├── Exceptions/
-│      │   └── DomainException.cs            # Custom exception for domain rule violations
-│      └── Interfaces/
-│          └── IProjectRepository.cs         # Repository contract — defined here, implemented elsewhere
-│   
-├── Application/              Application/                # ── USE CASE LAYER: orchestrates domain operations ──
-│      ├── Commands/
-│      │   ├── CreateProject/
-│      │   │   ├── CreateProjectCommand.cs           # Request record: Name, Description, Owner → Guid
-│      │   │   ├── CreateProjectCommandHandler.cs    # Creates Project aggregate, persists, returns ID
-│      │   │   └── CreateProjectCommandValidator.cs  # Name required (≤100 chars), Owner required
-│      │   ├── AddTaskToProject/
-│      │   │   ├── AddTaskToProjectCommand.cs            # Request: ProjectId, Title, Priority → Guid
-│      │   │   ├── AddTaskToProjectCommandHandler.cs     # Loads project, calls AddTask(), saves
-│      │   │   └── AddTaskToProjectCommandValidator.cs   # ProjectId required, Title ≤200, Priority in enum
-│      │   └── CompleteTask/
-│      │       ├── CompleteTaskCommand.cs             # Request: TaskId → Unit (void)
-│      │       └── CompleteTaskCommandHandler.cs      # Finds task via project, calls MarkAsCompleted()
-│      ├── Queries/
-│      │   └── GetProjectDetails/
-│      │       ├── GetProjectDetailsQuery.cs          # Request: ProjectId → ProjectDetailsDto
-│      │       ├── GetProjectDetailsQueryHandler.cs   # Loads project with tasks, maps to DTO
-│      │       └── ProjectDetailsDto.cs               # Response shape: project info + task list + stats
-│      ├── Behaviors/
-│      │   ├── LoggingBehavior.cs             # Wraps all requests — logs start/end + duration
-│      │   ├── ValidationBehavior.cs          # Runs FluentValidation rules before handler
-│      │   ├── TransactionBehavior.cs         # Wraps commands in DB transaction (+ ITransactionManager)
-│      │   └── PerformanceBehavior.cs         # Warns if handler exceeds 300ms threshold
-│      └── DependencyInjection.cs             # Registers MediatR, behaviors (in order), validators
-│   
-├── Infrastructure/              # ── DATA ACCESS LAYER: implements domain interfaces ──
-│      ├── Persistence/
-│      │   │   ├── AppDbContext.cs                # EF Core DbContext — DbSet<Project>, DbSet<TaskItem>
-│      │   │   ├── ProjectRepository.cs           # Implements IProjectRepository using EF Core
-│      │   │   ├── EfTransactionManager.cs        # Implements ITransactionManager for DB transactions
-│      │   │   └── Configurations/
-│      │   │       ├── ProjectConfiguration.cs    # EF Core fluent config for Project table
-│      │   │       └── TaskItemConfiguration.cs   # EF Core fluent config for TaskItem table
-│      └── DependencyInjection.cs             # Registers DbContext, repository, transaction manager
-├── API/                       # ── OUTERMOST LAYER: HTTP concerns only ──
-│       ├── Controllers/
-│       │   ├── ProjectsController.cs          # POST /api/projects, GET /api/projects/{id}
-│       │   └── TasksController.cs             # POST /api/projects/{id}/tasks, PUT /api/tasks/{id}/complete
-│       └── Middleware/
-│           └── GlobalExceptionHandlingMiddleware.cs  # Maps exceptions → structured HTTP error responses
-```
+├── Domain/                     # ── INNERMOST LAYER: pure business logic, zero dependencies ──
+│      ├── Aggregates/
+│      │   └── Project.cs                    # Aggregate root — owns tasks, enforces 20-task limit
+│      ├── Entities/
+│      │   └── TaskItem.cs                   # Entity — belongs to Project, has status & priority
+│      ├── Enums/
+│      │   ├── TaskItemStatus.cs             # Pending → InProgress → Completed
+│      │   └── TaskPriority.cs               # Low, Medium, High
+│      ├── Exceptions/
+│      │   └── DomainException.cs            # Custom exception for domain rule violations
+│      └── Interfaces/
+│          └── IProjectRepository.cs         # Repository contract — defined here, implemented elsewhere
+│   
+├── Application/              Application/                # ── USE CASE LAYER: orchestrates domain operations ──
+│      ├── Commands/
+│      │   ├── CreateProject/
+│      │   │   ├── CreateProjectCommand.cs           # Request record: Name, Description, Owner → Guid
+│      │   │   ├── CreateProjectCommandHandler.cs    # Creates Project aggregate, persists, returns ID
+│      │   │   └── CreateProjectCommandValidator.cs  # Name required (≤100 chars), Owner required
+│      │   ├── AddTaskToProject/
+│      │   │   ├── AddTaskToProjectCommand.cs            # Request: ProjectId, Title, Priority → Guid
+│      │   │   ├── AddTaskToProjectCommandHandler.cs     # Loads project, calls AddTask(), saves
+│      │   │   └── AddTaskToProjectCommandValidator.cs   # ProjectId required, Title ≤200, Priority in enum
+│      │   └── CompleteTask/
+│      │       ├── CompleteTaskCommand.cs             # Request: TaskId → Unit (void)
+│      │       └── CompleteTaskCommandHandler.cs      # Finds task via project, calls MarkAsCompleted()
+│      ├── Queries/
+│      │   └── GetProjectDetails/
+│      │       ├── GetProjectDetailsQuery.cs          # Request: ProjectId → ProjectDetailsDto
+│      │       ├── GetProjectDetailsQueryHandler.cs   # Loads project with tasks, maps to DTO
+│      │       └── ProjectDetailsDto.cs               # Response shape: project info + task list + stats
+│      ├── Behaviors/
+│      │   ├── LoggingBehavior.cs             # Wraps all requests — logs start/end + duration
+│      │   ├── ValidationBehavior.cs          # Runs FluentValidation rules before handler
+│      │   ├── TransactionBehavior.cs         # Wraps commands in DB transaction (+ ITransactionManager)
+│      │   └── PerformanceBehavior.cs         # Warns if handler exceeds 300ms threshold
+│      └── DependencyInjection.cs             # Registers MediatR, behaviors (in order), validators
+│   
+├── Infrastructure/              # ── DATA ACCESS LAYER: implements domain interfaces ──
+│      ├── Persistence/
+│      │   │   ├── AppDbContext.cs                # EF Core DbContext — DbSet<Project>, DbSet<TaskItem>
+│      │   │   ├── ProjectRepository.cs           # Implements IProjectRepository using EF Core
+│      │   │   ├── EfTransactionManager.cs        # Implements ITransactionManager for DB transactions
+│      │   │   └── Configurations/
+│      │   │       ├── ProjectConfiguration.cs    # EF Core fluent config for Project table
+│      │   │       └── TaskItemConfiguration.cs   # EF Core fluent config for TaskItem table
+│      └── DependencyInjection.cs             # Registers DbContext, repository, transaction manager
+├── API/                       # ── OUTERMOST LAYER: HTTP concerns only ──
+│       ├── Controllers/
+│       │   ├── ProjectsController.cs          # POST /api/projects, GET /api/projects/{id}
+│       │   └── TasksController.cs             # POST /api/projects/{id}/tasks, PUT /api/tasks/{id}/complete
+│       └── Middleware/
+│           └── GlobalExceptionHandlingMiddleware.cs  # Maps exceptions → structured HTTP error responses
 
----
 
+ 
 ## 🧩 Layer Responsibilities
 
 ### Domain Layer
@@ -251,35 +247,7 @@ Every request that passes through MediatR traverses a pipeline of four behaviors
 
 The Dependency Rule is the single most important constraint in Clean Architecture. Dependencies flow strictly inward. No inner layer may reference an outer layer.
 
-```
-                        ┌─────────────────────┐
-                        │       Domain        │
-                        │  (no dependencies)  │
-                        └──────────▲──────────┘
-                                   │
-                          ALLOWED  │  ✓
-                                   │
-                        ┌──────────┴──────────┐
-                        │     Application     │
-                        │  (depends on Domain)│
-                        └──────────▲──────────┘
-                                   │
-                          ALLOWED  │  ✓
-                                   │
-              ┌────────────────────┴────────────────────┐
-              │                                         │
-   ┌──────────┴──────────┐               ┌─────────────┴─────────────┐
-   │   Infrastructure    │               │     API / Presentation    │
-   │ (depends on Domain  │               │   (depends on Application)│
-   │  and Application)   │               │                           │
-   └─────────────────────┘               └───────────────────────────┘
 
-
-   ✗ FORBIDDEN directions:
-     Domain     ──✗──▶  Application, Infrastructure, API
-     Application ──✗──▶  Infrastructure, API
-     API         ──✗──▶  Infrastructure (directly)
-```
 
 > **The key insight:** `IProjectRepository` is defined in the Domain layer, but implemented in Infrastructure. The Application layer depends on the interface, not the implementation. At runtime, dependency injection wires them together. This is the **Dependency Inversion Principle** — the "D" in SOLID — and it is what makes Clean Architecture work.
 
