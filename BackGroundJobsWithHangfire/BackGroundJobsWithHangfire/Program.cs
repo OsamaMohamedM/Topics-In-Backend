@@ -1,28 +1,32 @@
+using BackGroundJobsWithHangfire.Services;
 using Hangfire;
+using Hangfire.MemoryStorage;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
-builder.Services.AddHangfire(x => x.UseSqlServerStorage(builder.Configuration.GetConnectionString("HangfireConnection")));
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+builder.Services.AddTransient<IJobTestService, JobTestService>();
+builder.Services.AddHangfire(configuration => configuration.UseMemoryStorage());
 builder.Services.AddHangfireServer();
+
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
-app.UseHangfireDashboard("/dashborad");
-
 app.UseAuthorization();
-
 app.MapControllers();
+app.UseHangfireDashboard("/dashboared");
+
+RecurringJob.AddOrUpdate<IJobTestService>(
+    "system-heartbeat",
+    job => job.RecurringTask("System heartbeat"),
+    Cron.Minutely);
 
 app.Run();
