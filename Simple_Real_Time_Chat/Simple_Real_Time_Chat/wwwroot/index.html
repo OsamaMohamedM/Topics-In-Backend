@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SignalR Chat Demo</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: #f5f7fb;
+      color: #1f2937;
+    }
+
+    main {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    h1, h2 {
+      margin-top: 0;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    input, button, textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      font: inherit;
+    }
+
+    textarea {
+      min-height: 84px;
+      resize: vertical;
+    }
+
+    button {
+      border: 0;
+      background: #2563eb;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: #475569;
+    }
+
+    button.success {
+      background: #15803d;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .actions button {
+      width: auto;
+      min-width: 140px;
+    }
+
+    #status {
+      font-weight: 700;
+    }
+
+    #log {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 8px;
+    }
+
+    #log li {
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    .muted {
+      color: #64748b;
+      font-size: 0.92rem;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>SignalR Chat Demo</h1>
+    <p class="muted">Open this page from the ASP.NET Core app root, set a username, then connect.</p>
+
+    <section class="card">
+      <h2>Connection</h2>
+      <div class="grid">
+        <div>
+          <label for="userName">Username</label>
+          <input id="userName" type="text" placeholder="osos" />
+        </div>
+      </div>
+      <div class="actions">
+        <button id="connectBtn">Connect</button>
+        <button id="disconnectBtn" class="secondary" disabled>Disconnect</button>
+      </div>
+      <p>Status: <span id="status">Disconnected</span></p>
+    </section>
+
+    <section class="card">
+      <h2>Private message</h2>
+      <div class="grid">
+        <div>
+          <label for="privateTo">To user</label>
+          <input id="privateTo" type="text" placeholder="osama" />
+        </div>
+        <div>
+          <label for="privateMessage">Message</label>
+          <input id="privateMessage" type="text" placeholder="Hello osama" />
+        </div>
+      </div>
+      <div class="actions">
+        <button id="sendPrivateBtn">Send private message</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Group message</h2>
+      <div class="grid">
+        <div>
+          <label for="groupName">Group name</label>
+          <input id="groupName" type="text" placeholder="study-group" />
+        </div>
+        <div>
+          <label for="groupMessage">Message</label>
+          <input id="groupMessage" type="text" placeholder="Hello everyone" />
+        </div>
+      </div>
+      <div class="actions">
+        <button id="joinGroupBtn" class="success">Join group</button>
+        <button id="leaveGroupBtn" class="secondary">Leave group</button>
+        <button id="sendGroupBtn">Send group message</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Messages</h2>
+      <ul id="log"></ul>
+    </section>
+  </main>
+
+  <script>
+    let connection = null;
+
+    const statusElement = document.getElementById('status');
+    const logElement = document.getElementById('log');
+    const connectBtn = document.getElementById('connectBtn');
+    const disconnectBtn = document.getElementById('disconnectBtn');
+    const sendPrivateBtn = document.getElementById('sendPrivateBtn');
+    const joinGroupBtn = document.getElementById('joinGroupBtn');
+    const leaveGroupBtn = document.getElementById('leaveGroupBtn');
+    const sendGroupBtn = document.getElementById('sendGroupBtn');
+
+    function appendLog(text) {
+      const item = document.createElement('li');
+      item.textContent = text;
+      logElement.prepend(item);
+    }
+
+    function setConnected(isConnected) {
+      connectBtn.disabled = isConnected;
+      disconnectBtn.disabled = !isConnected;
+      sendPrivateBtn.disabled = !isConnected;
+      joinGroupBtn.disabled = !isConnected;
+      leaveGroupBtn.disabled = !isConnected;
+      sendGroupBtn.disabled = !isConnected;
+      statusElement.textContent = isConnected ? 'Connected' : 'Disconnected';
+    }
+
+    setConnected(false);
+
+    connectBtn.addEventListener('click', async () => {
+      const userName = document.getElementById('userName').value.trim();
+      if (!userName) {
+        appendLog('Enter a username first.');
+        return;
+      }
+
+      if (connection) {
+        await connection.stop();
+      }
+
+      connection = new signalR.HubConnectionBuilder()
+        .withUrl(`/chathub?userName=${encodeURIComponent(userName)}`)
+        .withAutomaticReconnect()
+        .build();
+
+      connection.on('ReceivePrivateMessage', (fromUserName, message) => {
+        appendLog(`[Private] ${fromUserName}: ${message}`);
+      });
+
+      connection.on('ReceiveGroupMessage', (groupName, fromUserName, message) => {
+        appendLog(`[Group:${groupName}] ${fromUserName}: ${message}`);
+      });
+
+      connection.on('ReceiveSystemMessage', (message) => {
+        appendLog(`[System] ${message}`);
+      });
+
+      connection.onreconnecting(() => {
+        statusElement.textContent = 'Reconnecting...';
+      });
+
+      connection.onreconnected(() => {
+        statusElement.textContent = 'Connected';
+      });
+
+      connection.onclose(() => {
+        setConnected(false);
+      });
+
+      try {
+        await connection.start();
+        setConnected(true);
+        appendLog(`Connected as ${userName}.`);
+      } catch (error) {
+        appendLog(`Connection failed: ${error.message ?? error}`);
+        setConnected(false);
+      }
+    });
+
+    disconnectBtn.addEventListener('click', async () => {
+      if (!connection) {
+        return;
+      }
+
+      await connection.stop();
+      connection = null;
+      setConnected(false);
+      appendLog('Disconnected.');
+    });
+
+    sendPrivateBtn.addEventListener('click', async () => {
+      const toUserName = document.getElementById('privateTo').value.trim();
+      const message = document.getElementById('privateMessage').value.trim();
+
+      if (!toUserName || !message) {
+        appendLog('Private message requires both recipient and message.');
+        return;
+      }
+
+      await connection.invoke('SendPrivateMessage', toUserName, message);
+    });
+
+    joinGroupBtn.addEventListener('click', async () => {
+      const groupName = document.getElementById('groupName').value.trim();
+      if (!groupName) {
+        appendLog('Group name is required.');
+        return;
+      }
+
+      await connection.invoke('JoinGroup', groupName);
+    });
+
+    leaveGroupBtn.addEventListener('click', async () => {
+      const groupName = document.getElementById('groupName').value.trim();
+      if (!groupName) {
+        appendLog('Group name is required.');
+        return;
+      }
+
+      await connection.invoke('LeaveGroup', groupName);
+    });
+
+    sendGroupBtn.addEventListener('click', async () => {
+      const groupName = document.getElementById('groupName').value.trim();
+      const message = document.getElementById('groupMessage').value.trim();
+
+      if (!groupName || !message) {
+        appendLog('Group message requires both group name and message.');
+        return;
+      }
+
+      await connection.invoke('SendGroupMessage', groupName, message);
+    });
+  </script>
+</body>
+</html>
