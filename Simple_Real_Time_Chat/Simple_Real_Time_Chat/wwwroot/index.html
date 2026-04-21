@@ -1,322 +1,424 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SignalR Chat Demo</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
-  <style>
-    :root {
-      color-scheme: light;
-      font-family: Arial, Helvetica, sans-serif;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SignalR Chat Demo</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <style>
+        :root {
+            color-scheme: light;
+            font-family: Arial, Helvetica, sans-serif;
+        }
 
-    body {
-      margin: 0;
-      background: #f5f7fb;
-      color: #1f2937;
-    }
+        body {
+            margin: 0;
+            background: #f5f7fb;
+            color: #1f2937;
+        }
 
-    main {
-      max-width: 980px;
-      margin: 0 auto;
-      padding: 24px;
-    }
+        main {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 24px;
+        }
 
-    .card {
-      background: #fff;
-      border: 1px solid #e5e7eb;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 16px;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-    }
+        .card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+        }
 
-    h1, h2 {
-      margin-top: 0;
-    }
+        h1, h2 {
+            margin-top: 0;
+        }
 
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      margin-bottom: 12px;
-    }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 12px;
+        }
 
-    label {
-      display: block;
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
+        label {
+            display: block;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 6px;
+        }
 
-    input, button, textarea {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid #cbd5e1;
-      font: inherit;
-    }
+        input, button {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 10px 12px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font: inherit;
+        }
 
-    textarea {
-      min-height: 84px;
-      resize: vertical;
-    }
+        button {
+            border: 0;
+            background: #2563eb;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+        }
 
-    button {
-      border: 0;
-      background: #2563eb;
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-    }
+        button.secondary {
+            background: #475569;
+        }
 
-    button.secondary {
-      background: #475569;
-    }
+        button.success {
+            background: #15803d;
+        }
 
-    button.success {
-      background: #15803d;
-    }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
 
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
 
-    .actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+        .actions button {
+            width: auto;
+            min-width: 140px;
+        }
 
-    .actions button {
-      width: auto;
-      min-width: 140px;
-    }
+        #status {
+            font-weight: 700;
+        }
 
-    #status {
-      font-weight: 700;
-    }
+        #log {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            gap: 8px;
+        }
 
-    #log {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: grid;
-      gap: 8px;
-    }
+        #log li {
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+        }
 
-    #log li {
-      padding: 10px 12px;
-      border-radius: 8px;
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-    }
-
-    .muted {
-      color: #64748b;
-      font-size: 0.92rem;
-    }
-  </style>
+        .muted {
+            color: #64748b;
+            font-size: 0.92rem;
+        }
+    </style>
 </head>
 <body>
-  <main>
-    <h1>SignalR Chat Demo</h1>
-    <p class="muted">Open this page from the ASP.NET Core app root, set a username, then connect.</p>
+    <main>
+        <h1>SignalR Chat Demo</h1>
+        <p class="muted">Login first to get a JWT token, then connect to the hub.</p>
 
-    <section class="card">
-      <h2>Connection</h2>
-      <div class="grid">
-        <div>
-          <label for="userName">Username</label>
-          <input id="userName" type="text" placeholder="osos" />
-        </div>
-      </div>
-      <div class="actions">
-        <button id="connectBtn">Connect</button>
-        <button id="disconnectBtn" class="secondary" disabled>Disconnect</button>
-      </div>
-      <p>Status: <span id="status">Disconnected</span></p>
-    </section>
+        <section class="card">
+            <h2>Login</h2>
+            <div class="grid">
+                <div>
+                    <label for="userName">Username</label>
+                    <input id="userName" type="text" placeholder="Osos" />
+                </div>
+            </div>
+            <div class="actions">
+                <button id="loginBtn" class="success">Login</button>
+            </div>
+            <p>Auth: <span id="authStatus">Not logged in</span></p>
+        </section>
 
-    <section class="card">
-      <h2>Private message</h2>
-      <div class="grid">
-        <div>
-          <label for="privateTo">To user</label>
-          <input id="privateTo" type="text" placeholder="osama" />
-        </div>
-        <div>
-          <label for="privateMessage">Message</label>
-          <input id="privateMessage" type="text" placeholder="Hello osama" />
-        </div>
-      </div>
-      <div class="actions">
-        <button id="sendPrivateBtn">Send private message</button>
-      </div>
-    </section>
+        <section class="card">
+            <h2>Connection</h2>
+            <div class="actions">
+                <button id="connectBtn">Connect</button>
+                <button id="disconnectBtn" class="secondary" disabled>Disconnect</button>
+            </div>
+            <p>Status: <span id="status">Disconnected</span></p>
+        </section>
 
-    <section class="card">
-      <h2>Group message</h2>
-      <div class="grid">
-        <div>
-          <label for="groupName">Group name</label>
-          <input id="groupName" type="text" placeholder="study-group" />
-        </div>
-        <div>
-          <label for="groupMessage">Message</label>
-          <input id="groupMessage" type="text" placeholder="Hello everyone" />
-        </div>
-      </div>
-      <div class="actions">
-        <button id="joinGroupBtn" class="success">Join group</button>
-        <button id="leaveGroupBtn" class="secondary">Leave group</button>
-        <button id="sendGroupBtn">Send group message</button>
-      </div>
-    </section>
+        <section class="card">
+            <h2>Private message</h2>
+            <div class="grid">
+                <div>
+                    <label for="privateTo">To user</label>
+                    <input id="privateTo" type="text" placeholder="Osama" />
+                </div>
+                <div>
+                    <label for="privateMessage">Message</label>
+                    <input id="privateMessage" type="text" placeholder="Hello Osama" />
+                </div>
+            </div>
+            <div class="actions">
+                <button id="sendPrivateBtn">Send private message</button>
+            </div>
+        </section>
 
-    <section class="card">
-      <h2>Messages</h2>
-      <ul id="log"></ul>
-    </section>
-  </main>
+        <section class="card">
+            <h2>Group message</h2>
+            <div class="grid">
+                <div>
+                    <label for="groupName">Group name</label>
+                    <input id="groupName" type="text" placeholder="study-group" />
+                </div>
+                <div>
+                    <label for="groupMessage">Message</label>
+                    <input id="groupMessage" type="text" placeholder="Hello everyone" />
+                </div>
+            </div>
+            <div class="actions">
+                <button id="joinGroupBtn" class="success">Join group</button>
+                <button id="leaveGroupBtn" class="secondary">Leave group</button>
+                <button id="sendGroupBtn">Send group message</button>
+            </div>
+        </section>
 
-  <script>
-    let connection = null;
+        <section class="card">
+            <h2>Messages</h2>
+            <ul id="log"></ul>
+        </section>
+    </main>
 
-    const statusElement = document.getElementById('status');
-    const logElement = document.getElementById('log');
-    const connectBtn = document.getElementById('connectBtn');
-    const disconnectBtn = document.getElementById('disconnectBtn');
-    const sendPrivateBtn = document.getElementById('sendPrivateBtn');
-    const joinGroupBtn = document.getElementById('joinGroupBtn');
-    const leaveGroupBtn = document.getElementById('leaveGroupBtn');
-    const sendGroupBtn = document.getElementById('sendGroupBtn');
+    <script>
+        // @ts-nocheck
+        function requiredElement(id) {
+            const element = document.getElementById(id);
+            if (!element) {
+                throw new Error(`Element '${id}' was not found.`);
+            }
 
-    function appendLog(text) {
-      const item = document.createElement('li');
-      item.textContent = text;
-      logElement.prepend(item);
-    }
+            return element;
+        }
 
-    function setConnected(isConnected) {
-      connectBtn.disabled = isConnected;
-      disconnectBtn.disabled = !isConnected;
-      sendPrivateBtn.disabled = !isConnected;
-      joinGroupBtn.disabled = !isConnected;
-      leaveGroupBtn.disabled = !isConnected;
-      sendGroupBtn.disabled = !isConnected;
-      statusElement.textContent = isConnected ? 'Connected' : 'Disconnected';
-    }
+        const signalRRef = window.signalR;
+        if (!signalRRef) {
+            throw new Error('SignalR script failed to load.');
+        }
 
-    setConnected(false);
+        /** @type {any | null} */
+        let connection = null;
+        let jwtToken = '';
 
-    connectBtn.addEventListener('click', async () => {
-      const userName = document.getElementById('userName').value.trim();
-      if (!userName) {
-        appendLog('Enter a username first.');
-        return;
-      }
+        const userNameInput = /** @type {HTMLInputElement} */ (requiredElement('userName'));
+        const authStatusElement = requiredElement('authStatus');
+        const statusElement = requiredElement('status');
+        const logElement = /** @type {HTMLUListElement} */ (requiredElement('log'));
 
-      if (connection) {
-        await connection.stop();
-      }
+        const loginBtn = /** @type {HTMLButtonElement} */ (requiredElement('loginBtn'));
+        const connectBtn = /** @type {HTMLButtonElement} */ (requiredElement('connectBtn'));
+        const disconnectBtn = /** @type {HTMLButtonElement} */ (requiredElement('disconnectBtn'));
+        const sendPrivateBtn = /** @type {HTMLButtonElement} */ (requiredElement('sendPrivateBtn'));
+        const joinGroupBtn = /** @type {HTMLButtonElement} */ (requiredElement('joinGroupBtn'));
+        const leaveGroupBtn = /** @type {HTMLButtonElement} */ (requiredElement('leaveGroupBtn'));
+        const sendGroupBtn = /** @type {HTMLButtonElement} */ (requiredElement('sendGroupBtn'));
 
-      connection = new signalR.HubConnectionBuilder()
-        .withUrl(`/chathub?userName=${encodeURIComponent(userName)}`)
-        .withAutomaticReconnect()
-        .build();
+        const privateToInput = /** @type {HTMLInputElement} */ (requiredElement('privateTo'));
+        const privateMessageInput = /** @type {HTMLInputElement} */ (requiredElement('privateMessage'));
+        const groupNameInput = /** @type {HTMLInputElement} */ (requiredElement('groupName'));
+        const groupMessageInput = /** @type {HTMLInputElement} */ (requiredElement('groupMessage'));
 
-      connection.on('ReceivePrivateMessage', (fromUserName, message) => {
-        appendLog(`[Private] ${fromUserName}: ${message}`);
-      });
+        function appendLog(text) {
+            const item = document.createElement('li');
+            item.textContent = text;
+            logElement.prepend(item);
+        }
 
-      connection.on('ReceiveGroupMessage', (groupName, fromUserName, message) => {
-        appendLog(`[Group:${groupName}] ${fromUserName}: ${message}`);
-      });
+        function setConnected(isConnected) {
+            connectBtn.disabled = isConnected || !jwtToken;
+            disconnectBtn.disabled = !isConnected;
+            sendPrivateBtn.disabled = !isConnected;
+            joinGroupBtn.disabled = !isConnected;
+            leaveGroupBtn.disabled = !isConnected;
+            sendGroupBtn.disabled = !isConnected;
+            statusElement.textContent = isConnected ? 'Connected' : 'Disconnected';
+        }
 
-      connection.on('ReceiveSystemMessage', (message) => {
-        appendLog(`[System] ${message}`);
-      });
+        function setLoggedInState(isLoggedIn, userName) {
+            if (isLoggedIn) {
+                authStatusElement.textContent = `Logged in as ${userName}`;
+                connectBtn.disabled = false;
+                return;
+            }
 
-      connection.onreconnecting(() => {
-        statusElement.textContent = 'Reconnecting...';
-      });
+            authStatusElement.textContent = 'Not logged in';
+            connectBtn.disabled = true;
+        }
 
-      connection.onreconnected(() => {
-        statusElement.textContent = 'Connected';
-      });
-
-      connection.onclose(() => {
         setConnected(false);
-      });
+        setLoggedInState(false, '');
 
-      try {
-        await connection.start();
-        setConnected(true);
-        appendLog(`Connected as ${userName}.`);
-      } catch (error) {
-        appendLog(`Connection failed: ${error.message ?? error}`);
-        setConnected(false);
-      }
-    });
+        loginBtn.addEventListener('click', async () => {
+            const userName = userNameInput.value.trim();
+            if (!userName) {
+                appendLog('Enter a username to login.');
+                return;
+            }
 
-    disconnectBtn.addEventListener('click', async () => {
-      if (!connection) {
-        return;
-      }
+            try {
+                const response = await fetch('api/Auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userName })
+                });
 
-      await connection.stop();
-      connection = null;
-      setConnected(false);
-      appendLog('Disconnected.');
-    });
+                if (!response.ok) {
+                    appendLog('Login failed.');
+                    setLoggedInState(false, '');
+                    return;
+                }
 
-    sendPrivateBtn.addEventListener('click', async () => {
-      const toUserName = document.getElementById('privateTo').value.trim();
-      const message = document.getElementById('privateMessage').value.trim();
+                const data = await response.json();
+                jwtToken = data.token;
 
-      if (!toUserName || !message) {
-        appendLog('Private message requires both recipient and message.');
-        return;
-      }
+                if (!jwtToken) {
+                    appendLog('Login failed: token was not returned.');
+                    setLoggedInState(false, '');
+                    return;
+                }
 
-      await connection.invoke('SendPrivateMessage', toUserName, message);
-    });
+                appendLog(`Login successful for ${data.userName}.`);
+                setLoggedInState(true, data.userName);
+                setConnected(false);
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                appendLog(`Login error: ${message}`);
+                setLoggedInState(false, '');
+            }
+        });
 
-    joinGroupBtn.addEventListener('click', async () => {
-      const groupName = document.getElementById('groupName').value.trim();
-      if (!groupName) {
-        appendLog('Group name is required.');
-        return;
-      }
+        connectBtn.addEventListener('click', async () => {
+            if (!jwtToken) {
+                appendLog('Please login before connecting.');
+                return;
+            }
 
-      await connection.invoke('JoinGroup', groupName);
-    });
+            if (connection) {
+                await connection.stop();
+            }
 
-    leaveGroupBtn.addEventListener('click', async () => {
-      const groupName = document.getElementById('groupName').value.trim();
-      if (!groupName) {
-        appendLog('Group name is required.');
-        return;
-      }
+            connection = new signalRRef.HubConnectionBuilder()
+                .withUrl('/chathub', {
+                    accessTokenFactory: () => jwtToken
+                })
+                .withAutomaticReconnect()
+                .build();
 
-      await connection.invoke('LeaveGroup', groupName);
-    });
+            connection.on('ReceivePrivateMessage', (fromUserName, message) => {
+                appendLog(`[Private] ${fromUserName}: ${message}`);
+            });
 
-    sendGroupBtn.addEventListener('click', async () => {
-      const groupName = document.getElementById('groupName').value.trim();
-      const message = document.getElementById('groupMessage').value.trim();
+            connection.on('ReceiveGroupMessage', (groupName, fromUserName, message) => {
+                appendLog(`[Group:${groupName}] ${fromUserName}: ${message}`);
+            });
 
-      if (!groupName || !message) {
-        appendLog('Group message requires both group name and message.');
-        return;
-      }
+            connection.on('ReceiveSystemMessage', (message) => {
+                appendLog(`[System] ${message}`);
+            });
 
-      await connection.invoke('SendGroupMessage', groupName, message);
-    });
-  </script>
+            connection.onreconnecting(() => {
+                statusElement.textContent = 'Reconnecting...';
+            });
+
+            connection.onreconnected(() => {
+                statusElement.textContent = 'Connected';
+            });
+
+            connection.onclose(() => {
+                setConnected(false);
+            });
+
+            try {
+                await connection.start();
+                setConnected(true);
+                appendLog('Connected to hub.');
+            } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                appendLog(`Connection failed: ${message}`);
+                setConnected(false);
+            }
+        });
+
+        disconnectBtn.addEventListener('click', async () => {
+            if (!connection) {
+                return;
+            }
+
+            await connection.stop();
+            connection = null;
+            setConnected(false);
+            appendLog('Disconnected.');
+        });
+
+        sendPrivateBtn.addEventListener('click', async () => {
+            if (!connection) {
+                appendLog('Connect first.');
+                return;
+            }
+
+            const toUserName = privateToInput.value.trim();
+            const message = privateMessageInput.value.trim();
+
+            if (!toUserName || !message) {
+                appendLog('Private message requires both recipient and message.');
+                return;
+            }
+
+            await connection.invoke('SendPrivateMessage', toUserName, message);
+        });
+
+        joinGroupBtn.addEventListener('click', async () => {
+            if (!connection) {
+                appendLog('Connect first.');
+                return;
+            }
+
+            const groupName = groupNameInput.value.trim();
+            if (!groupName) {
+                appendLog('Group name is required.');
+                return;
+            }
+
+            await connection.invoke('JoinGroup', groupName);
+        });
+
+        leaveGroupBtn.addEventListener('click', async () => {
+            if (!connection) {
+                appendLog('Connect first.');
+                return;
+            }
+
+            const groupName = groupNameInput.value.trim();
+            if (!groupName) {
+                appendLog('Group name is required.');
+                return;
+            }
+
+            await connection.invoke('LeaveGroup', groupName);
+        });
+
+        sendGroupBtn.addEventListener('click', async () => {
+            if (!connection) {
+                appendLog('Connect first.');
+                return;
+            }
+
+            const groupName = groupNameInput.value.trim();
+            const message = groupMessageInput.value.trim();
+
+            if (!groupName || !message) {
+                appendLog('Group message requires both group name and message.');
+                return;
+            }
+
+            await connection.invoke('SendGroupMessage', groupName, message);
+        });
+    </script>
 </body>
 </html>
