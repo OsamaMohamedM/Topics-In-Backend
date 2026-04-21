@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SignalR Chat Demo</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/msgpack5/4.5.1/msgpack5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr-protocol-msgpack/8.0.7/signalr-protocol-msgpack.min.js"></script>
     <style>
         :root {
@@ -304,13 +305,18 @@
                 await connection.stop();
             }
 
-            connection = new signalRRef.HubConnectionBuilder()
+            const builder = new signalRRef.HubConnectionBuilder()
                 .withUrl('/chathub', {
                     accessTokenFactory: () => jwtToken
                 })
-                .withHubProtocol(new signalR.protocols.msgpack.MessagePackHubProtocol())
-                .withAutomaticReconnect()
-                .build();
+                .withAutomaticReconnect();
+
+            const messagePackProtocol = signalRRef.protocols?.msgpack?.MessagePackHubProtocol;
+            if (messagePackProtocol) {
+                builder.withHubProtocol(new messagePackProtocol());
+            }
+
+            connection = builder.build();
 
             connection.on('ReceivePrivateMessage', (fromUserName, message) => {
                 appendLog(`[Private] ${fromUserName}: ${message}`);

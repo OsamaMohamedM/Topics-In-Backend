@@ -1,40 +1,87 @@
 # Simple Real-Time Chat (SignalR)
 
-Educational ASP.NET Core chat sample with:
+A simple educational ASP.NET Core project that demonstrates real-time chat communication using SignalR.
 
-- 1-to-1 private messaging
-- Group join/leave and group messaging
-- Strongly typed SignalR hub (`Hub<IChatClient>`)
-- Thread-safe in-memory connection tracking (`IConnectionManager`)
+## What this project demonstrates
 
-## Prerequisites
+- Real-time 1-to-1 messaging
+- Real-time group messaging
+- Joining and leaving chat groups dynamically
+- Strongly typed Hub-to-client communication (no magic strings for client callbacks)
+- Clean separation of concerns with in-memory connection tracking service
 
-- .NET SDK 10
+## Tech stack and tools
 
-## Run
+- `.NET 10` (`ASP.NET Core`)
+- `SignalR` for real-time communication
+- `MessagePack` protocol for compact binary payloads
+- Vanilla JavaScript frontend (`wwwroot/index.html`)
+- In-memory thread-safe collections (`ConcurrentDictionary`)
 
-From the `Simple_Real_Time_Chat` folder:
+## Project structure
+
+- `Program.cs`
+  - Configures services and middleware
+  - Registers SignalR and maps `/chathub`
+  - Enables CORS and static file hosting
+
+- `Hubs/`
+  - `ChatHub.cs`: main real-time chat hub (private + group messaging)
+  - `IChatClient.cs`: strongly typed client contract for messages
+
+- `Services/`
+  - `IConnectionManager.cs`: abstraction for connection mapping
+  - `ConnectionManager.cs`: thread-safe in-memory implementation
+
+- `wwwroot/`
+  - `index.html`: simple UI to connect and test private/group messaging
+
+- `Controllers/`
+  - API endpoints used by the app
+
+- `appsettings.json`
+  - environment configuration values
+
+## Core real-time concepts used
+
+- **Hub lifecycle**
+  - `OnConnectedAsync` and `OnDisconnectedAsync` to track active connections
+
+- **User-to-connection mapping**
+  - One user can have one or many active `ConnectionId`s
+  - Mapping is handled outside the Hub to keep responsibilities focused
+
+- **Private messaging**
+  - Routes messages directly using `Clients.Client(connectionId)`
+
+- **Group messaging**
+  - Uses `Groups.AddToGroupAsync` / `Groups.RemoveFromGroupAsync`
+  - Broadcasts with `Clients.Group(groupName)`
+
+- **Strongly typed clients**
+  - Hub inherits from `Hub<IChatClient>`
+  - Client callbacks are compile-time safe
+
+## How to run
+
+From the `Simple_Real_Time_Chat` directory:
 
 ```bash
 dotnet restore
 dotnet run
 ```
 
-After startup, open the app URL shown in terminal (example: `https://localhost:7xxx`).
+Then open the URL shown in terminal (for example: `https://localhost:7xxx`).
 
-The UI is served from `wwwroot/index.html` automatically.
+## Quick manual test
 
-## Quick test flow
-
-1. Open the app in two browser windows (or one normal + one incognito).
-2. In window 1, connect as `Alice`.
-3. In window 2, connect as `Bob`.
-4. Send private message from `Alice` to `Bob`.
-5. In both windows, join group `study-group`.
-6. Send a group message to `study-group`.
+1. Open the app in two browser windows.
+2. Connect from both windows using different usernames.
+3. Send a private message from one user to the other.
+4. Join the same group in both windows.
+5. Send a group message and verify both clients receive it.
 
 ## Notes
 
-- Connection/user mapping is in-memory only (resets on app restart).
-- No authentication/JWT/database is used by design for learning.
-- If you serve frontend from another origin (for example `http://127.0.0.1:5500`), keep/update the CORS policy in `Program.cs`.
+- This is an educational sample focused on real-time communication patterns.
+- Connection state is in-memory and resets when the app restarts.
