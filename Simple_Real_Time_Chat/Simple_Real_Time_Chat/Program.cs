@@ -66,7 +66,9 @@ builder.Services
 
 builder.Services.AddAuthorization();
 builder.Services.AddSingleton<IConnectionManager, ConnectionManager>();
-builder.Services.AddSignalR();
+builder.Services
+    .AddSignalR()
+    .AddMessagePackProtocol();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
